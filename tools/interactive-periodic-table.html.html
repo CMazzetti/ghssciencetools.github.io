@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Periodic Table — Bohr Model Explorer</title>
+<style>
+  :root{
+    --navy:#14395B; --navy-dark:#0E2A44; --teal:#0F9188; --teal-dark:#0B6E67;
+    --bg:#F2F6F9; --tile:#FFFFFF; --ink:#1B2A38; --muted:#5B6B7A;
+    --ak:#E8927C; --ae:#F2B662; --tm:#7FB3D5; --pt:#9FA8DA; --md:#8FBC8F;
+    --nm:#63B995; --hg:#C9A0DC; --ng:#F49AC2; --la:#6FCFCF; --ac:#B8A9C9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--ink);}
+  header{background:linear-gradient(135deg, var(--navy-dark), var(--navy)); color:#fff; padding:18px 24px; border-bottom:4px solid var(--teal);}
+  header h1{font-size:1.5rem; letter-spacing:0.3px;}
+  header p{font-size:0.85rem; opacity:0.85; margin-top:4px;}
+  .wrap{max-width:1280px; margin:0 auto; padding:16px;}
+  .controls{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:12px;}
+  .controls input[type=text]{padding:8px 10px; border:2px solid var(--navy); border-radius:6px; font:inherit; min-width:200px;}
+  .toggle{display:flex; align-items:center; gap:6px; background:#fff; border:2px solid var(--navy); border-radius:6px; padding:7px 10px; cursor:pointer; font-size:0.85rem; user-select:none;}
+  .toggle input{accent-color:var(--teal); width:16px; height:16px; cursor:pointer;}
+  .legend{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
+  .chip{display:inline-flex; align-items:center; gap:5px; font-size:0.72rem; background:#fff; border:1px solid #d5dee5; border-radius:20px; padding:3px 10px 3px 5px;}
+  .chip i{width:12px; height:12px; border-radius:50%; display:inline-block;}
+  .table-scroll{overflow-x:auto; padding-bottom:8px;}
+  .ptable{display:grid; grid-template-columns:repeat(18, minmax(56px,1fr)); grid-auto-rows:64px; gap:4px; min-width:1100px;}
+  .el{border:none; border-radius:6px; background:var(--tile); cursor:pointer; padding:3px 4px; text-align:left; display:flex; flex-direction:column; justify-content:space-between; border-left:4px solid var(--cc,#ccc); box-shadow:0 1px 2px rgba(20,57,91,0.15); transition:transform .08s, box-shadow .08s, opacity .2s; font-family:inherit; color:var(--ink);}
+  .el:hover, .el:focus-visible{transform:translateY(-2px) scale(1.04); box-shadow:0 4px 10px rgba(20,57,91,0.3); outline:2px solid var(--teal); z-index:2;}
+  .el .z{font-size:0.6rem; color:var(--muted);}
+  .el .sym{font-size:1.05rem; font-weight:bold; color:var(--navy); line-height:1;}
+  .el .nm{font-size:0.55rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .el.dim{opacity:0.22; filter:grayscale(70%);}
+  .el.hit{outline:3px solid var(--teal); z-index:2;}
+  .fnote{grid-column:1/4; align-self:center; font-size:0.7rem; color:var(--muted); padding-left:4px;}
+  .spacer{grid-column:1/-1; height:10px;}
+  footer{max-width:1280px; margin:8px auto 24px; padding:0 16px; font-size:0.75rem; color:var(--muted); line-height:1.5;}
+  /* Modal */
+  .overlay{position:fixed; inset:0; background:rgba(14,42,68,0.72); display:none; align-items:center; justify-content:center; padding:16px; z-index:50;}
+  .overlay.open{display:flex;}
+  .card{background:#fff; border-radius:12px; max-width:860px; width:100%; max-height:94vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4); border-top:6px solid var(--teal);}
+  .card-head{background:var(--navy); color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; gap:10px; position:sticky; top:0; z-index:2;}
+  .card-head h2{font-size:1.15rem;} .card-head .cat{font-size:0.75rem; opacity:0.85;}
+  .icon-btn{background:var(--teal); color:#fff; border:none; border-radius:6px; padding:7px 12px; font:inherit; font-weight:bold; cursor:pointer;}
+  .icon-btn:hover{background:var(--teal-dark);}
+  .card-body{display:grid; grid-template-columns:1fr 1fr; gap:18px; padding:18px 20px;}
+  @media(max-width:720px){.card-body{grid-template-columns:1fr;}}
+  .bohr-wrap{text-align:center;}
+  .bohr-wrap svg{width:100%; max-width:380px; height:auto;}
+  .anim-btn{margin-top:6px; background:#fff; border:2px solid var(--navy); color:var(--navy); border-radius:6px; padding:5px 12px; font:inherit; font-size:0.78rem; cursor:pointer;}
+  .facts h3{color:var(--navy); font-size:0.95rem; border-bottom:2px solid var(--teal); padding-bottom:4px; margin:10px 0 8px;}
+  .facts h3:first-child{margin-top:0;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; font-size:0.85rem;}
+  .grid2 b{color:var(--navy);}
+  .shellcfg{font-size:1.25rem; font-weight:bold; color:var(--teal-dark); letter-spacing:1px;}
+  .note{background:#EAF4F3; border-left:4px solid var(--teal); padding:8px 10px; font-size:0.78rem; margin-top:10px; border-radius:0 6px 6px 0; line-height:1.45;}
+  .warn{background:#FBF1E6; border-left-color:#E5A15D;}
+  .nav-row{display:flex; justify-content:space-between; padding:0 20px 18px; gap:10px;}
+  .nav-row button{flex:1; max-width:200px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes spinr{to{transform:rotate(-360deg);}}
+  .orbit{transform-origin:190px 190px; animation:spin var(--dur,30s) linear infinite;}
+  .orbit.rev{animation-name:spinr;}
+  .paused .orbit{animation-play-state:paused;}
+  @media (prefers-reduced-motion: reduce){.orbit{animation:none;}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Interactive Periodic Table &mdash; Bohr Model Explorer</h1>
+  <p>Click any element to see its Bohr (shell) diagram, electron configuration and key atomic data. Built for NSW Science 7&ndash;10 &mdash; Stage 4 Atoms &amp; Stage 5 Chemistry.</p>
+</header>
+
+<div class="wrap">
+  <div class="controls">
+    <input type="text" id="search" placeholder="Search name or symbol&hellip;" aria-label="Search elements">
+    <label class="toggle"><input type="checkbox" id="stage4"> Stage 4 focus &mdash; highlight elements 1&ndash;20</label>
+    <label class="toggle"><input type="checkbox" id="mainonly"> Dim transition metals, lanthanoids &amp; actinoids</label>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="table-scroll">
+    <div class="ptable" id="ptable" role="grid" aria-label="Periodic table of the elements"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="card">
+    <div class="card-head">
+      <div><h2 id="mTitle"></h2><div class="cat" id="mCat"></div></div>
+      <button class="icon-btn" id="closeBtn" aria-label="Close">&#10005; Close</button>
+    </div>
+    <div class="card-body">
+      <div class="bohr-wrap">
+        <div id="bohrSvg"></div>
+        <button class="anim-btn" id="animBtn">&#10074;&#10074; Pause animation</button>
+      </div>
+      <div class="facts">
+        <h3>Electron configuration</h3>
+        <div class="shellcfg" id="mShells"></div>
+        <div class="grid2" style="margin-top:8px;">
+          <div><b>Valence electrons:</b> <span id="mVal"></span></div>
+          <div><b>Shells occupied:</b> <span id="mNsh"></span></div>
+        </div>
+        <h3>Atomic structure</h3>
+        <div class="grid2">
+          <div><b>Protons:</b> <span id="mP"></span></div>
+          <div><b>Electrons:</b> <span id="mE"></span></div>
+          <div><b>Neutrons:</b> <span id="mN"></span></div>
+          <div><b>Atomic mass:</b> <span id="mMass"></span></div>
+        </div>
+        <h3>Position &amp; bonding</h3>
+        <div class="grid2">
+          <div><b>Group:</b> <span id="mGroup"></span></div>
+          <div><b>Period:</b> <span id="mPeriod"></span></div>
+          <div style="grid-column:1/-1;"><b>Common ion:</b> <span id="mIon"></span></div>
+        </div>
+        <div class="note" id="mNote" hidden></div>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="icon-btn" id="prevBtn">&larr; Previous</button>
+      <button class="icon-btn" id="nextBtn">Next &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p><b>About the model:</b> Bohr diagrams show electrons in shells around the nucleus and are the model used in NSW Stages 4&ndash;5. Neutron numbers shown are for the most common (or most stable) isotope, calculated from the rounded atomic mass. Masses in brackets are the mass number of the most stable isotope of a radioactive element. Shell configurations for elements beyond calcium follow the experimentally determined ground-state configurations (including exceptions such as Cu and Cr).</p>
+  <p style="margin-top:6px;">Single-file offline tool &bull; No internet required &bull; Works on interactive whiteboards.</p>
+</footer>
+
+<script>
+/*DATA-START*/
+// [symbol, name, mass, category, bracket(1=mass number of most stable isotope)]
+var ELEMENTS=[
+["H","Hydrogen",1.008,"NM",0],["He","Helium",4.003,"NG",0],["Li","Lithium",6.94,"AK",0],["Be","Beryllium",9.012,"AE",0],["B","Boron",10.81,"MD",0],["C","Carbon",12.011,"NM",0],["N","Nitrogen",14.007,"NM",0],["O","Oxygen",15.999,"NM",0],["F","Fluorine",18.998,"HG",0],["Ne","Neon",20.180,"NG",0],
+["Na","Sodium",22.990,"AK",0],["Mg","Magnesium",24.305,"AE",0],["Al","Aluminium",26.982,"PT",0],["Si","Silicon",28.086,"MD",0],["P","Phosphorus",30.974,"NM",0],["S","Sulfur",32.06,"NM",0],["Cl","Chlorine",35.45,"HG",0],["Ar","Argon",39.948,"NG",0],["K","Potassium",39.098,"AK",0],["Ca","Calcium",40.078,"AE",0],
+["Sc","Scandium",44.956,"TM",0],["Ti","Titanium",47.867,"TM",0],["V","Vanadium",50.942,"TM",0],["Cr","Chromium",51.996,"TM",0],["Mn","Manganese",54.938,"TM",0],["Fe","Iron",55.845,"TM",0],["Co","Cobalt",58.933,"TM",0],["Ni","Nickel",58.693,"TM",0],["Cu","Copper",63.546,"TM",0],["Zn","Zinc",65.38,"TM",0],
+["Ga","Gallium",69.723,"PT",0],["Ge","Germanium",72.630,"MD",0],["As","Arsenic",74.922,"MD",0],["Se","Selenium",78.971,"NM",0],["Br","Bromine",79.904,"HG",0],["Kr","Krypton",83.798,"NG",0],["Rb","Rubidium",85.468,"AK",0],["Sr","Strontium",87.62,"AE",0],["Y","Yttrium",88.906,"TM",0],["Zr","Zirconium",91.224,"TM",0],
+["Nb","Niobium",92.906,"TM",0],["Mo","Molybdenum",95.95,"TM",0],["Tc","Technetium",98,"TM",1],["Ru","Ruthenium",101.07,"TM",0],["Rh","Rhodium",102.906,"TM",0],["Pd","Palladium",106.42,"TM",0],["Ag","Silver",107.868,"TM",0],["Cd","Cadmium",112.414,"TM",0],["In","Indium",114.818,"PT",0],["Sn","Tin",118.710,"PT",0],
+["Sb","Antimony",121.760,"MD",0],["Te","Tellurium",127.60,"MD",0],["I","Iodine",126.904,"HG",0],["Xe","Xenon",131.293,"NG",0],["Cs","Caesium",132.905,"AK",0],["Ba","Barium",137.327,"AE",0],["La","Lanthanum",138.905,"LA",0],["Ce","Cerium",140.116,"LA",0],["Pr","Praseodymium",140.908,"LA",0],["Nd","Neodymium",144.242,"LA",0],
+["Pm","Promethium",145,"LA",1],["Sm","Samarium",150.36,"LA",0],["Eu","Europium",151.964,"LA",0],["Gd","Gadolinium",157.25,"LA",0],["Tb","Terbium",158.925,"LA",0],["Dy","Dysprosium",162.500,"LA",0],["Ho","Holmium",164.930,"LA",0],["Er","Erbium",167.259,"LA",0],["Tm","Thulium",168.934,"LA",0],["Yb","Ytterbium",173.045,"LA",0],
+["Lu","Lutetium",174.967,"LA",0],["Hf","Hafnium",178.49,"TM",0],["Ta","Tantalum",180.948,"TM",0],["W","Tungsten",183.84,"TM",0],["Re","Rhenium",186.207,"TM",0],["Os","Osmium",190.23,"TM",0],["Ir","Iridium",192.217,"TM",0],["Pt","Platinum",195.084,"TM",0],["Au","Gold",196.967,"TM",0],["Hg","Mercury",200.592,"TM",0],
+["Tl","Thallium",204.38,"PT",0],["Pb","Lead",207.2,"PT",0],["Bi","Bismuth",208.980,"PT",0],["Po","Polonium",209,"PT",1],["At","Astatine",210,"HG",1],["Rn","Radon",222,"NG",1],["Fr","Francium",223,"AK",1],["Ra","Radium",226,"AE",1],["Ac","Actinium",227,"AC",1],["Th","Thorium",232.038,"AC",0],
+["Pa","Protactinium",231.036,"AC",0],["U","Uranium",238.029,"AC",0],["Np","Neptunium",237,"AC",1],["Pu","Plutonium",244,"AC",1],["Am","Americium",243,"AC",1],["Cm","Curium",247,"AC",1],["Bk","Berkelium",247,"AC",1],["Cf","Californium",251,"AC",1],["Es","Einsteinium",252,"AC",1],["Fm","Fermium",257,"AC",1],
+["Md","Mendelevium",258,"AC",1],["No","Nobelium",259,"AC",1],["Lr","Lawrencium",266,"AC",1],["Rf","Rutherfordium",267,"TM",1],["Db","Dubnium",268,"TM",1],["Sg","Seaborgium",269,"TM",1],["Bh","Bohrium",270,"TM",1],["Hs","Hassium",269,"TM",1],["Mt","Meitnerium",278,"TM",1],["Ds","Darmstadtium",281,"TM",1],
+["Rg","Roentgenium",282,"TM",1],["Cn","Copernicium",285,"TM",1],["Nh","Nihonium",286,"PT",1],["Fl","Flerovium",289,"PT",1],["Mc","Moscovium",290,"PT",1],["Lv","Livermorium",293,"PT",1],["Ts","Tennessine",294,"HG",1],["Og","Oganesson",294,"NG",1]
+];
+
+var CATS={AK:["Alkali metal","--ak"],AE:["Alkaline earth metal","--ae"],TM:["Transition metal","--tm"],PT:["Post-transition metal","--pt"],MD:["Metalloid","--md"],NM:["Reactive non-metal","--nm"],HG:["Halogen","--hg"],NG:["Noble gas","--ng"],LA:["Lanthanoid","--la"],AC:["Actinoid","--ac"]};
+
+// Aufbau subshell filling order with capacities; n = principal shell
+var ORDER=[[1,2],[2,2],[2,6],[3,2],[3,6],[4,2],[3,10],[4,6],[5,2],[4,10],[5,6],[6,2],[4,14],[5,10],[6,6],[7,2],[5,14],[6,10],[7,6]];
+
+// Experimentally determined ground-state exceptions (shell totals differ from Aufbau)
+var EXCEPTIONS={
+ 24:[2,8,13,1], 29:[2,8,18,1],
+ 41:[2,8,18,12,1], 42:[2,8,18,13,1], 44:[2,8,18,15,1], 45:[2,8,18,16,1], 46:[2,8,18,18], 47:[2,8,18,18,1],
+ 57:[2,8,18,18,9,2], 58:[2,8,18,19,9,2], 64:[2,8,18,25,9,2],
+ 78:[2,8,18,32,17,1], 79:[2,8,18,32,18,1],
+ 89:[2,8,18,32,18,9,2], 90:[2,8,18,32,18,10,2], 91:[2,8,18,32,20,9,2], 92:[2,8,18,32,21,9,2], 93:[2,8,18,32,22,9,2], 96:[2,8,18,32,25,9,2],
+ 103:[2,8,18,32,32,8,3]
+};
+
+function shellsFor(z){
+  if(EXCEPTIONS[z]) return EXCEPTIONS[z].slice();
+  var sh=[0,0,0,0,0,0,0], left=z;
+  for(var i=0;i<ORDER.length && left>0;i++){
+    var take=Math.min(ORDER[i][1],left);
+    sh[ORDER[i][0]-1]+=take; left-=take;
+  }
+  while(sh.length && sh[sh.length-1]===0) sh.pop();
+  return sh;
+}
+
+function positionFor(z){ // returns [row,col]; f-block in rows 9 & 10
+  if(z===1)return[1,1]; if(z===2)return[1,18];
+  if(z<=10){var o=z-3; return[2, o<2?o+1:o+11];}
+  if(z<=18){var o=z-11; return[3, o<2?o+1:o+11];}
+  if(z<=36)return[4, z-18];
+  if(z<=54)return[5, z-36];
+  if(z<=56)return[6, z-54];
+  if(z<=71)return[9, z-53];       // lanthanoids
+  if(z<=86)return[6, z-68];
+  if(z<=88)return[7, z-86];
+  if(z<=103)return[10, z-85];     // actinoids
+  return[7, z-100];
+}
+
+function groupFor(z){
+  var p=positionFor(z);
+  if(p[0]===9||p[0]===10) return null; // f-block: no IUPAC group number
+  return p[1];
+}
+function periodFor(z){
+  if(z<=2)return 1; if(z<=10)return 2; if(z<=18)return 3; if(z<=36)return 4;
+  if(z<=54)return 5; if(z<=86)return 6; return 7;
+}
+
+function ionFor(z,cat){
+  var g=groupFor(z);
+  if(z===1) return "H\u207A (loses 1 e\u207B); can also gain one to form H\u207B";
+  if(cat==="NG") return "Does not usually form ions \u2014 full outer shell";
+  if(cat==="LA"||cat==="AC") return "Typically 3+ (varies)";
+  if(g===1) return ELEMENTS[z-1][0]+"\u207A \u2014 loses 1 electron";
+  if(g===2) return ELEMENTS[z-1][0]+"\u00B2\u207A \u2014 loses 2 electrons";
+  if(g===13) return ELEMENTS[z-1][0]+"\u00B3\u207A \u2014 loses 3 electrons";
+  if(g===14) return "Usually shares electrons (covalent bonding)";
+  if(g===15) return ELEMENTS[z-1][0]+"\u00B3\u207B \u2014 gains 3 electrons";
+  if(g===16) return ELEMENTS[z-1][0]+"\u00B2\u207B \u2014 gains 2 electrons";
+  if(g===17) return ELEMENTS[z-1][0]+"\u207B \u2014 gains 1 electron";
+  return "Variable \u2014 transition metals form more than one ion (e.g. Fe\u00B2\u207A and Fe\u00B3\u207A)";
+}
+/*DATA-END*/
+
+var current=1;
+var $=function(id){return document.getElementById(id);};
+
+function buildLegend(){
+  var html="";
+  for(var k in CATS){
+    html+='<span class="chip"><i style="background:var('+CATS[k][1]+')"></i>'+CATS[k][0]+'</span>';
+  }
+  $("legend").innerHTML=html;
+}
+
+function buildTable(){
+  var grid=$("ptable"), frag=document.createDocumentFragment();
+  ELEMENTS.forEach(function(e,i){
+    var z=i+1, pos=positionFor(z);
+    var b=document.createElement("button");
+    b.className="el"; b.dataset.z=z;
+    b.style.gridRow=pos[0]; b.style.gridColumn=pos[1];
+    b.style.setProperty("--cc","var("+CATS[e[3]][1]+")");
+    b.setAttribute("aria-label", e[1]+", atomic number "+z);
+    b.innerHTML='<span class="z">'+z+'</span><span class="sym">'+e[0]+'</span><span class="nm">'+e[1]+'</span>';
+    b.addEventListener("click",function(){openEl(z);});
+    frag.appendChild(b);
+  });
+  // markers for f-block rows
+  var m1=document.createElement("div"); m1.className="fnote"; m1.style.gridRow=9; m1.textContent="57\u201371 Lanthanoids"; frag.appendChild(m1);
+  var m2=document.createElement("div"); m2.className="fnote"; m2.style.gridRow=10; m2.textContent="89\u2013103 Actinoids"; frag.appendChild(m2);
+  grid.appendChild(frag);
+}
+
+function bohrSVG(z){
+  var sh=shellsFor(z), n=sh.length;
+  var e=ELEMENTS[z-1];
+  var neutrons=Math.round(e[2])-z;
+  var C=190, size=380;
+  var rIn=46, rOut=176;
+  var svg='<svg viewBox="0 0 '+size+' '+size+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bohr diagram of '+e[1]+'">';
+  // shells + electrons
+  for(var s=0;s<n;s++){
+    var r = n===1 ? 110 : rIn + s*(rOut-rIn)/(n-1);
+    svg+='<circle cx="'+C+'" cy="'+C+'" r="'+r+'" fill="none" stroke="#B8C7D4" stroke-width="1.6"/>';
+    var count=sh[s];
+    var dot = count>18 ? 4 : (count>8 ? 5.5 : 7);
+    var dur = 26 + s*10;
+    svg+='<g class="orbit'+(s%2?' rev':'')+'" style="--dur:'+dur+'s">';
+    for(var k=0;k<count;k++){
+      var a=-Math.PI/2 + (2*Math.PI*k/count);
+      var x=C + r*Math.cos(a), y=C + r*Math.sin(a);
+      svg+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+dot+'" fill="var(--teal)" stroke="#fff" stroke-width="1.2"/>';
+    }
+    svg+='</g>';
+    // shell label
+    svg+='<text x="'+(C+4)+'" y="'+(C-r-4)+'" font-size="9" fill="#8296A8" font-family="Arial">'+ (count) +' e\u207B</text>';
+  }
+  // nucleus
+  var nr = n===1 ? 34 : Math.min(36, rIn-10+26);
+  svg+='<circle cx="'+C+'" cy="'+C+'" r="30" fill="var(--navy)"/>';
+  svg+='<text x="'+C+'" y="'+(C-4)+'" text-anchor="middle" font-size="11" font-weight="bold" fill="#FFFFFF" font-family="Arial">'+z+' p\u207A</text>';
+  svg+='<text x="'+C+'" y="'+(C+11)+'" text-anchor="middle" font-size="11" font-weight="bold" fill="#9FE8E2" font-family="Arial">'+neutrons+' n\u2070</text>';
+  svg+='</svg>';
+  return svg;
+}
+
+function openEl(z){
+  current=z;
+  var e=ELEMENTS[z-1], sh=shellsFor(z);
+  $("mTitle").textContent=z+" \u2014 "+e[1]+" ("+e[0]+")";
+  $("mCat").textContent=CATS[e[3]][0];
+  $("bohrSvg").innerHTML=bohrSVG(z);
+  $("mShells").textContent=sh.join(", ");
+  $("mVal").textContent=sh[sh.length-1];
+  $("mNsh").textContent=sh.length;
+  $("mP").textContent=z;
+  $("mE").textContent=z;
+  $("mN").textContent=Math.round(e[2])-z;
+  $("mMass").textContent=e[4] ? "("+e[2]+")" : e[2];
+  var g=groupFor(z);
+  $("mGroup").textContent = g===null ? "\u2014 (f-block)" : g;
+  $("mPeriod").textContent=periodFor(z);
+  $("mIon").textContent=ionFor(z,e[3]);
+  var note=$("mNote"), msgs=[];
+  if(z>20) msgs.push("This element goes beyond the simple 2, 8, 8 filling pattern used for the first 20 elements in Stage 4. The configuration shown is the accepted ground-state shell arrangement.");
+  if(z>=104) msgs.push("Synthetic element \u2014 made in laboratories a few atoms at a time. Its chemical properties are predicted rather than fully measured.");
+  else if(e[4]) msgs.push("Radioactive \u2014 the mass shown in brackets is the mass number of its most stable isotope.");
+  if(msgs.length){note.hidden=false; note.className="note"+(z>=104?" warn":""); note.innerHTML=msgs.join("<br><br>");}
+  else note.hidden=true;
+  $("overlay").classList.add("open");
+  $("closeBtn").focus();
+}
+
+function step(d){
+  var z=current+d;
+  if(z<1)z=118; if(z>118)z=1;
+  openEl(z);
+}
+
+function init(){
+  buildLegend(); buildTable();
+  $("closeBtn").addEventListener("click",function(){$("overlay").classList.remove("open");});
+  $("overlay").addEventListener("click",function(ev){if(ev.target===this)this.classList.remove("open");});
+  $("prevBtn").addEventListener("click",function(){step(-1);});
+  $("nextBtn").addEventListener("click",function(){step(1);});
+  $("animBtn").addEventListener("click",function(){
+    var w=$("bohrSvg"); w.classList.toggle("paused");
+    this.innerHTML = w.classList.contains("paused") ? "\u25B6 Play animation" : "\u275A\u275A Pause animation";
+  });
+  document.addEventListener("keydown",function(ev){
+    if(!$("overlay").classList.contains("open"))return;
+    if(ev.key==="Escape")$("overlay").classList.remove("open");
+    if(ev.key==="ArrowLeft")step(-1);
+    if(ev.key==="ArrowRight")step(1);
+  });
+  $("stage4").addEventListener("change",applyFilters);
+  $("mainonly").addEventListener("change",applyFilters);
+  $("search").addEventListener("input",applyFilters);
+}
+
+function applyFilters(){
+  var s4=$("stage4").checked, mo=$("mainonly").checked;
+  var q=$("search").value.trim().toLowerCase();
+  document.querySelectorAll(".el").forEach(function(b){
+    var z=+b.dataset.z, e=ELEMENTS[z-1];
+    var dim=false;
+    if(s4 && z>20) dim=true;
+    if(mo && (e[3]==="TM"||e[3]==="LA"||e[3]==="AC")) dim=true;
+    b.classList.toggle("dim",dim);
+    var hit = q && (e[1].toLowerCase().indexOf(q)===0 || e[0].toLowerCase()===q);
+    b.classList.toggle("hit",hit);
+  });
+}
+
+document.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>

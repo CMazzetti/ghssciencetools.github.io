@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Zero — Contact Tracing Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4efe6;
+    --paper-2:#ece5d8;
+    --ink:#20262b;
+    --ink-soft:#525c63;
+    --line:#cdc4b2;
+    --teal:#0e6b65;
+    --teal-dk:#0a4f4a;
+    --pink:#d6336c;
+    --pink-soft:#fbe3ec;
+    --amber:#b87514;
+    --amber-soft:#fbeccd;
+    --clean:#e7e0d1;
+    --shadow:0 1px 2px rgba(32,38,43,.08),0 8px 24px rgba(32,38,43,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    background-image:radial-gradient(circle at 1px 1px, rgba(32,38,43,.05) 1px, transparent 0);
+    background-size:22px 22px;
+    color:var(--ink);
+    font-family:"IBM Plex Sans",sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
+
+  header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:8px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--teal);font-weight:600}
+  h1{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(38px,7vw,64px);line-height:.95;margin:6px 0 6px;letter-spacing:-.02em}
+  h1 .dot{color:var(--pink)}
+  .sub{color:var(--ink-soft);max-width:62ch;font-size:15px}
+
+  .card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:22px;margin-top:22px;box-shadow:var(--shadow)}
+  .card-head{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+  .step{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;background:var(--ink);color:var(--paper);border-radius:6px;padding:3px 9px;flex:none}
+  h2{font-family:"Fraunces",serif;font-weight:600;font-size:23px;margin:0;letter-spacing:-.01em}
+  .hint{color:var(--ink-soft);font-size:13.5px;margin:6px 0 16px}
+
+  .controls{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  input[type=number]{font-family:"IBM Plex Mono",monospace;font-size:16px;width:90px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+  input[type=number]:focus{outline:2px solid var(--teal);border-color:var(--teal)}
+
+  button{font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;cursor:pointer;border-radius:9px;padding:11px 18px;border:1px solid transparent;transition:transform .08s ease, box-shadow .15s ease, background .15s ease}
+  button:active{transform:translateY(1px)}
+  .btn-primary{background:var(--teal);color:#fff}
+  .btn-primary:hover{background:var(--teal-dk)}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+  .btn-ghost:hover{background:var(--paper);border-color:var(--ink-soft)}
+  .btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+
+  .grid-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+  table.swaps{border-collapse:collapse;width:100%;font-family:"IBM Plex Mono",monospace}
+  table.swaps th,table.swaps td{padding:7px 10px;text-align:center;border-bottom:1px solid var(--line);font-size:14px}
+  table.swaps thead th{position:sticky;top:0;background:var(--paper-2);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;z-index:2}
+  table.swaps tbody td.snum{font-weight:600;color:var(--teal);background:var(--paper-2);position:sticky;left:0;z-index:1}
+  table.swaps input{width:54px;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:6px 4px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  table.swaps input:focus{outline:2px solid var(--teal);border-color:var(--teal)}
+  table.swaps input.bad{border-color:var(--pink);background:var(--pink-soft)}
+  .mirror-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);margin:14px 0 0}
+  .mirror-toggle input{width:auto}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:14px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:9px;background:var(--clean);color:var(--ink-soft);cursor:pointer;user-select:none;transition:all .12s ease}
+  .chip:hover{border-color:var(--ink-soft)}
+  .chip.pink{background:var(--pink);border-color:var(--pink);color:#fff;box-shadow:0 3px 10px rgba(214,51,108,.3)}
+  .chip-legend{display:flex;gap:18px;margin-bottom:14px;font-size:13px;color:var(--ink-soft)}
+  .swatch{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
+
+  #results{margin-top:22px}
+  .verdict{border-radius:14px;padding:24px;margin-bottom:18px}
+  .verdict.found{background:linear-gradient(135deg,#fff,var(--pink-soft));border:1px solid var(--pink)}
+  .verdict.multi{background:linear-gradient(135deg,#fff,var(--amber-soft));border:1px solid var(--amber)}
+  .verdict.none{background:#fff;border:1px solid var(--ink-soft)}
+  .verdict .vlabel{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;font-weight:600}
+  .verdict.found .vlabel{color:var(--pink)}
+  .verdict.multi .vlabel{color:var(--amber)}
+  .verdict .vmain{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(28px,5vw,46px);line-height:1.02;margin:8px 0 6px}
+  .pznum{color:var(--pink)}
+  .verdict p{margin:8px 0 0;color:var(--ink-soft);font-size:14.5px;max-width:66ch}
+  .pz-pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .pz-pill{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:18px;background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:9px}
+
+  .tree-wrap{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px;overflow-x:auto}
+  .tree-title{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin:18px 4px 8px}
+
+  /* ---- animated spread playback ---- */
+  .tree-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:6px 0 10px}
+  .tc-round{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-left:4px}
+  .tree-controls button{padding:9px 14px;font-size:13px}
+  .tree-caption{font-family:"IBM Plex Mono",monospace;font-size:13.5px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--pink);border-radius:8px;padding:11px 14px;margin-bottom:12px;min-height:20px;transition:border-color .3s ease}
+  .tree-caption .cnt{color:var(--pink);font-weight:600}
+  .tree-caption.src{border-left-color:var(--ink)}
+  .tree-caption.src .cnt{color:var(--teal)}
+
+  .tn{transition:opacity .45s ease, transform .45s ease;transform-box:fill-box;transform-origin:center}
+  .tn.is-hidden{opacity:0;transform:scale(.15)}
+  .te{transition:opacity .5s ease}
+  .te.is-hidden{opacity:0}
+
+  .class-strip{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .ac-legend{display:flex;flex-wrap:wrap;gap:18px;margin:4px 4px 10px;font-size:12px;color:var(--ink-soft);font-family:"IBM Plex Mono",monospace;letter-spacing:.04em;text-transform:uppercase}
+  .ac-legend span{display:inline-flex;align-items:center;gap:6px}
+  .ac-sw{display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid var(--line)}
+  .ac-sw.line{height:0;width:22px;border-radius:0;border:0;border-top:2px solid var(--line)}
+  .cdot{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:500;background:var(--clean);color:var(--ink-soft);border:1px solid var(--line);transition:background .4s ease,color .4s ease,transform .4s ease,box-shadow .4s ease}
+  .cdot.lit{background:var(--pink);color:#fff;border-color:var(--pink);transform:scale(1.06);box-shadow:0 3px 9px rgba(214,51,108,.3)}
+  .cdot.src.lit{background:var(--ink);border-color:var(--ink)}
+  .discrep{margin-top:14px;font-size:14px}
+  .discrep ul{margin:6px 0;padding-left:20px}
+  .tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:12px;padding:1px 7px;border-radius:5px;font-weight:600}
+  .tag.fp{background:var(--pink-soft);color:var(--pink)}
+  .tag.fn{background:var(--amber-soft);color:var(--amber)}
+  .warnbox{background:var(--amber-soft);border:1px solid var(--amber);border-radius:10px;padding:14px 16px;margin-top:14px;font-size:13.5px;color:#6b4a0e}
+  .warnbox b{color:var(--amber)}
+
+  /* ---- infection graph ---- */
+  .graph-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin:18px 0}
+  .graph-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .graph-head h3{font-family:"Fraunces",serif;font-size:20px;margin:0}
+  .graph-note{font-size:13px;color:var(--ink-soft);margin:2px 0 0}
+  .graph-legend{display:flex;flex-wrap:wrap;gap:14px;font-family:"IBM Plex Mono",monospace;font-size:11px;text-transform:uppercase;color:var(--ink-soft)}
+  .graph-legend span{display:inline-flex;align-items:center;gap:6px}
+  .graph-line{display:inline-block;width:22px;height:0;border-top:3px solid var(--pink);border-radius:3px}
+  .graph-line.intervention{border-top-color:var(--teal)}
+  .graph-scroll{overflow-x:auto}
+  .growth-callout{margin-top:10px;padding:10px 12px;border-left:4px solid var(--pink);background:var(--pink-soft);border-radius:7px;font-size:13.5px}
+
+  /* ---- intervention simulator ---- */
+  .intervention-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:14px 0}
+  select{font-family:"IBM Plex Sans",sans-serif;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);min-height:42px}
+  select:focus{outline:2px solid var(--teal);border-color:var(--teal)}
+  .wide-field{grid-column:1/-1}
+  .intervention-explain{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:9px;padding:12px 14px;font-size:13.5px;color:var(--ink-soft);margin-top:4px}
+  .target-area{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .target-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .target-head strong{font-size:14px}
+  .target-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .target-tools input{width:66px!important;padding:7px 8px!important;font-size:14px!important}
+  .target-tools button{padding:8px 11px;font-size:12.5px}
+  .target-chip{font-family:"IBM Plex Mono",monospace;font-size:13px;width:39px;height:39px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;background:var(--clean);color:var(--ink-soft);cursor:pointer;user-select:none;transition:all .12s ease}
+  .target-chip:hover{border-color:var(--teal)}
+  .target-chip.selected{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 3px 9px rgba(14,107,101,.22)}
+  .target-count{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--teal);font-weight:600;margin-top:8px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:14px 0}
+  .stat{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .stat .num{font-family:"Fraunces",serif;font-weight:900;font-size:30px;line-height:1;color:var(--ink)}
+  .stat.good .num{color:var(--teal)}
+  .stat .lab{font-family:"IBM Plex Mono",monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin-top:5px}
+  .intervention-result{margin-top:18px}
+  .detail-list{font-size:13.5px;color:var(--ink-soft);margin:8px 0 0;padding-left:20px}
+  .model-note{font-size:12.5px;color:var(--ink-soft);margin-top:12px}
+  .hidden{display:none!important}
+
+  footer{margin-top:40px;text-align:center;color:var(--ink-soft);font-size:12px;font-family:"IBM Plex Mono",monospace;letter-spacing:.05em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Year 9 Science · Contact Tracing</div>
+    <h1>Patient&nbsp;Zero<span class="dot">.</span></h1>
+    <p class="sub">Enter who each student swapped beakers with each round, mark the beakers that turned pink, and this will trace the outbreak back to its source.</p>
+  </header>
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <div class="card-head"><span class="step">1</span><h2>Class set-up</h2></div>
+    <p class="hint">How many students, and how many swap rounds did you run?</p>
+    <div class="controls">
+      <div class="field">
+        <label>Students</label>
+        <input type="number" id="numStudents" min="2" max="60" value="30">
+      </div>
+      <div class="field">
+        <label>Rounds</label>
+        <input type="number" id="numRounds" min="1" max="8" value="3">
+      </div>
+      <button class="btn-primary" id="buildBtn">Build the sheet</button>
+      <button class="btn-ghost" id="exampleBtn">Load worked example</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card" id="swapCard" style="display:none">
+    <div class="card-head"><span class="step">2</span><h2>Swap records</h2></div>
+    <p class="hint">For each student row, type the number of the beaker they swapped with in each round. (If a student sat out a round, leave it blank.)</p>
+    <div class="grid-scroll"><table class="swaps" id="swapTable"></table></div>
+    <label class="mirror-toggle"><input type="checkbox" id="mirror" checked> Auto-fill the partner's cell for me (recommended — enter the full number, then leave the box or press Enter)</label>
+    <div id="validation"></div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card" id="pinkCard" style="display:none">
+    <div class="card-head"><span class="step">3</span><h2>Who turned pink?</h2></div>
+    <p class="hint">Tap every beaker number that turned pink with the indicator. These are your infected students.</p>
+    <div class="chip-legend">
+      <span><span class="swatch" style="background:var(--pink)"></span>Infected (pink)</span>
+      <span><span class="swatch" style="background:var(--clean)"></span>Clear</span>
+    </div>
+    <div class="chips" id="pinkChips"></div>
+    <div class="btn-row">
+      <button class="btn-primary" id="traceBtn">Trace patient zero →</button>
+      <button class="btn-ghost" id="clearPinkBtn">Clear selection</button>
+    </div>
+  </div>
+
+  <div id="results"></div>
+
+  <!-- STEP 4 -->
+  <div class="card" id="interventionCard" style="display:none">
+    <div class="card-head"><span class="step">4</span><h2>Intervention simulator</h2></div>
+    <p class="hint">Test how an action introduced during the outbreak changes the final number infected. The same contact records and patient-zero source are used for a fair comparison.</p>
+
+    <div class="intervention-grid">
+      <div class="field">
+        <label for="interventionType">Intervention</label>
+        <select id="interventionType">
+          <option value="vaccination">Vaccination</option>
+          <option value="isolation">Isolation</option>
+          <option value="reduced">Reduced swapping</option>
+          <option value="tracing">Contact tracing</option>
+          <option value="masks">Masks</option>
+          <option value="closure">Close a highly connected group</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="interventionRound">Begins</label>
+        <select id="interventionRound"></select>
+      </div>
+      <div class="field">
+        <label id="strengthLabel" for="interventionStrength">Effectiveness (%)</label>
+        <input type="number" id="interventionStrength" min="0" max="100" value="80">
+      </div>
+      <div class="wide-field intervention-explain" id="interventionExplain"></div>
+    </div>
+
+    <div class="target-area" id="targetArea">
+      <div class="target-head">
+        <strong id="targetTitle">Choose students</strong>
+        <div class="target-tools">
+          <span style="font-size:12.5px;color:var(--ink-soft)">Select top</span>
+          <input type="number" id="autoTargetCount" min="1" value="5" aria-label="Number of highly connected students">
+          <button class="btn-ghost" id="selectConnectedBtn" type="button">most connected</button>
+          <button class="btn-ghost" id="clearTargetsBtn" type="button">Clear</button>
+        </div>
+      </div>
+      <div class="chips" id="targetChips"></div>
+      <div class="target-count" id="targetCount">0 students selected</div>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn-primary" id="runInterventionBtn">Run intervention comparison →</button>
+    </div>
+    <div id="interventionResult" class="intervention-result"></div>
+  </div>
+
+  <footer>BUILT FOR THE GHS SCIENCE FACULTY · ALL CALCULATION HAPPENS IN YOUR BROWSER</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var N=30, R=3;
+  var partners=[];      // partners[s][r] = student number (1..N) or null
+  var infected={};      // set of student numbers that turned pink
+  var treeData=null;    // {caps:[...], maxRound, source} for the spread animation
+  var currentSource=null; // source currently being used for graphs/interventions
+  var currentBaseline=null;
+  var multipleSourceMode=false;
+  var interventionTargets={};
+
+  var $=function(id){return document.getElementById(id)};
+
+  // ---------- build the entry sheet ----------
+  function buildSheet(){
+    N=Math.max(2,Math.min(60,parseInt($("numStudents").value)||30));
+    R=Math.max(1,Math.min(8,parseInt($("numRounds").value)||3));
+    $("numStudents").value=N; $("numRounds").value=R;
+
+    partners=[]; for(var s=0;s<N;s++){partners[s]=[];for(var r=0;r<R;r++)partners[s][r]=null;}
+    infected={};
+    currentSource=null; currentBaseline=null; multipleSourceMode=false; interventionTargets={};
+
+    // swap table
+    var t=$("swapTable");
+    var head="<thead><tr><th>Student</th>";
+    for(var r=0;r<R;r++) head+="<th>Round "+(r+1)+"</th>";
+    head+="</tr></thead>";
+    var body="<tbody>";
+    for(var s=0;s<N;s++){
+      body+="<tr><td class='snum'>"+(s+1)+"</td>";
+      for(var r=0;r<R;r++){
+        body+="<td><input type='number' min='1' max='"+N+"' id='p-"+s+"-"+r+"' data-s='"+s+"' data-r='"+r+"' inputmode='numeric'></td>";
+      }
+      body+="</tr>";
+    }
+    body+="</tbody>";
+    t.innerHTML=head+body;
+
+    // Commit a swap only after the full number has been entered. Using the
+    // "input" event here used to process the first digit immediately, so typing
+    // 19 briefly behaved as though the partner were Student 1 and could overwrite
+    // that student's entry. The "change" event waits until the user leaves the
+    // box (or presses Enter), so two-digit student numbers are handled correctly.
+    t.onchange=onCellInput;
+    t.onkeydown=onCellKeydown;
+
+    // pink chips
+    var c=$("pinkChips"); c.innerHTML="";
+    for(var s=0;s<N;s++){
+      var chip=document.createElement("div");
+      chip.className="chip"; chip.textContent=(s+1);
+      chip.dataset.s=(s+1);
+      chip.addEventListener("click",togglePink);
+      c.appendChild(chip);
+    }
+
+    $("swapCard").style.display="";
+    $("pinkCard").style.display="";
+    $("results").innerHTML="";
+    $("interventionCard").style.display="none";
+    $("interventionResult").innerHTML="";
+    populateInterventionRounds();
+    buildTargetChips();
+    updateInterventionUI();
+    validate();
+  }
+
+  function onCellKeydown(e){
+    var inp=e.target;
+    if(inp.tagName!=="INPUT" || e.key!=="Enter")return;
+
+    e.preventDefault();
+    var inputs=Array.prototype.slice.call($("swapTable").querySelectorAll("input"));
+    var index=inputs.indexOf(inp);
+
+    // Blurring commits the completed number through the change handler.
+    inp.blur();
+
+    // Move to the next box to make rapid data entry easier.
+    if(index>=0 && index<inputs.length-1){
+      window.setTimeout(function(){
+        inputs[index+1].focus();
+        inputs[index+1].select();
+      },0);
+    }
+  }
+
+  function onCellInput(e){
+    var inp=e.target; if(inp.tagName!=="INPUT")return;
+    var s=+inp.dataset.s, r=+inp.dataset.r;
+    var raw=inp.value.trim();
+    var val=raw===""?null:parseInt(raw);
+    var old=partners[s][r];
+
+    // clear the previous mirror if it pointed back here
+    if($("mirror").checked && old && partners[old-1] && partners[old-1][r]===(s+1)){
+      partners[old-1][r]=null;
+      var prev=$("p-"+(old-1)+"-"+r); if(prev)prev.value="";
+    }
+    partners[s][r]=(val&&val>=1&&val<=N)?val:null;
+
+    // write the mirror
+    if($("mirror").checked && partners[s][r] && partners[s][r]!==(s+1)){
+      var p=partners[s][r]-1;
+      partners[p][r]=s+1;
+      var mir=$("p-"+p+"-"+r); if(mir)mir.value=(s+1);
+    }
+    validate();
+  }
+
+  function togglePink(e){
+    var n=+e.currentTarget.dataset.s;
+    if(infected[n]){delete infected[n];e.currentTarget.classList.remove("pink");}
+    else{infected[n]=true;e.currentTarget.classList.add("pink");}
+  }
+
+  // ---------- validation of the swap data ----------
+  function validate(){
+    var msgs=[];
+    document.querySelectorAll("table.swaps input").forEach(function(i){i.classList.remove("bad")});
+    for(var r=0;r<R;r++){
+      var seen={};
+      for(var s=0;s<N;s++){
+        var p=partners[s][r];
+        if(p===null)continue;
+        if(p===s+1){ flag(s,r); msgs.push("Round "+(r+1)+": student "+(s+1)+" can't swap with themselves."); continue;}
+        // reciprocity
+        if(partners[p-1][r]!==(s+1)){
+          flag(s,r);
+          msgs.push("Round "+(r+1)+": student "+(s+1)+" lists "+p+", but "+p+" doesn't list "+(s+1)+" back.");
+        }
+      }
+    }
+    var v=$("validation");
+    if(msgs.length){
+      var uniq=msgs.filter(function(m,i){return msgs.indexOf(m)===i}).slice(0,8);
+      v.innerHTML="<div class='warnbox'><b>Check these entries</b> — each swap should be mutual:<ul style='margin:6px 0 0;padding-left:18px'>"+
+        uniq.map(function(m){return "<li>"+m+"</li>"}).join("")+"</ul></div>";
+    }else v.innerHTML="";
+  }
+  function flag(s,r){var i=$("p-"+s+"-"+r);if(i)i.classList.add("bad");}
+
+  // ---------- the core: simulate one source through all rounds ----------
+  function pairsForRound(r){
+    var seen={}, pairs=[];
+    for(var s=0;s<N;s++){
+      var p=partners[s][r];
+      if(!p||p===s+1)continue;
+      var a=Math.min(s+1,p), b=Math.max(s+1,p), key=a+"-"+b;
+      if(!seen[key]){seen[key]=true;pairs.push([a,b]);}
+    }
+    return pairs;
+  }
+
+  function stableRoll(parts){
+    // Deterministic pseudo-random value from 0 to 99. The same class data and
+    // settings therefore produce the same result every time students rerun it.
+    var str=parts.join("|");
+    var h=2166136261;
+    for(var i=0;i<str.length;i++){
+      h^=str.charCodeAt(i);
+      h=Math.imul(h,16777619);
+    }
+    return (h>>>0)%100;
+  }
+
+  function copySet(o){var c={};for(var k in o)c[k]=true;return c;}
+
+  function connectionRanking(fromRound){
+    var score={}; for(var s=1;s<=N;s++)score[s]=0;
+    var start=Math.max(0,fromRound||0);
+    for(var r=start;r<R;r++){
+      var prs=pairsForRound(r);
+      for(var i=0;i<prs.length;i++){
+        score[prs[i][0]]++; score[prs[i][1]]++;
+      }
+    }
+    return Object.keys(score).map(Number).sort(function(a,b){
+      return score[b]-score[a] || a-b;
+    });
+  }
+
+  function simulate(source,options){
+    options=options||null;
+    var inf={}; inf[source]=true;
+    var log=[]; // per round: array of {from,to}
+    var counts=[1];
+    var skippedSwaps=0, blockedTransmissions=0;
+    var activeProtected={}, activeIsolated={}, activeClosed={};
+    var tracedPeople={};
+    var type=options?options.type:null;
+    var startAfter=options?Math.max(0,Math.min(R-1,+options.startAfter||0)):R+1;
+    var strength=options?Math.max(0,Math.min(100,+options.strength||0)):0;
+    var targets=options?options.targets||{}:{};
+
+    // The closure group is selected from the students with the most recorded
+    // contacts after the intervention begins.
+    var closureList=[];
+    if(type==="closure"){
+      var howMany=Math.max(1,Math.round(N*strength/100));
+      closureList=connectionRanking(startAfter).slice(0,howMany);
+    }
+
+    for(var r=0;r<R;r++){
+      // Activate interventions at the beginning of the first affected round.
+      if(options && r===startAfter){
+        if(type==="vaccination"){
+          for(var v in targets){
+            if(stableRoll(["vax-person",source,r,v])<strength) activeProtected[v]=true;
+          }
+        }else if(type==="isolation"){
+          for(var q in targets){
+            if(stableRoll(["iso-person",source,r,q])<strength) activeIsolated[q]=true;
+          }
+        }else if(type==="closure"){
+          closureList.forEach(function(n){activeClosed[n]=true;});
+        }
+      }
+
+      // Contact tracing continues every affected round. It isolates known cases
+      // and the people they contacted in the immediately previous round.
+      if(options && type==="tracing" && r>=startAfter){
+        var candidates=copySet(inf);
+        if(r>0){
+          var prevPairs=pairsForRound(r-1);
+          for(var pi=0;pi<prevPairs.length;pi++){
+            var pa=prevPairs[pi][0], pb=prevPairs[pi][1];
+            if(inf[pa]||inf[pb]){candidates[pa]=true;candidates[pb]=true;}
+          }
+        }
+        for(var tc in candidates){
+          if(stableRoll(["trace-person",source,r,tc])<strength){
+            activeIsolated[tc]=true; tracedPeople[tc]=true;
+          }
+        }
+      }
+
+      var before=copySet(inf);
+      var pairs=pairsForRound(r), step=[];
+      for(var i=0;i<pairs.length;i++){
+        var a=pairs[i][0], b=pairs[i][1];
+        var interventionActive=options && r>=startAfter;
+
+        if(interventionActive && (activeIsolated[a]||activeIsolated[b]||activeClosed[a]||activeClosed[b])){
+          skippedSwaps++; continue;
+        }
+        if(interventionActive && type==="reduced" && stableRoll(["swap",source,r,a,b])<strength){
+          skippedSwaps++; continue;
+        }
+
+        var ai=before[a], bi=before[b];
+        var from=null,to=null;
+        if(ai&&!bi){from=a;to=b;}
+        else if(bi&&!ai){from=b;to=a;}
+        if(from===null)continue;
+
+        var blocked=false;
+        if(interventionActive && type==="vaccination" && activeProtected[to]){
+          blocked=true;
+        }
+        if(interventionActive && type==="masks" && stableRoll(["mask",source,r,from,to])<strength){
+          blocked=true;
+        }
+        if(blocked){blockedTransmissions++;continue;}
+
+        inf[to]=true; step.push({from:from,to:to});
+      }
+      log.push(step);
+      counts.push(setKeys(inf).length);
+    }
+    return {
+      set:inf,
+      log:log,
+      counts:counts,
+      skippedSwaps:skippedSwaps,
+      blockedTransmissions:blockedTransmissions,
+      protected:setKeys(activeProtected),
+      isolated:setKeys(activeIsolated),
+      traced:setKeys(tracedPeople),
+      closed:setKeys(activeClosed)
+    };
+  }
+
+  function setKeys(o){return Object.keys(o).map(Number).sort(function(a,b){return a-b})}
+  function sameSet(a,b){var ka=setKeys(a),kb=setKeys(b);if(ka.length!==kb.length)return false;for(var i=0;i<ka.length;i++)if(ka[i]!==kb[i])return false;return true;}
+  function symDiff(a,b){var d=0,k;for(k in a)if(!b[k])d++;for(k in b)if(!a[k])d++;return d;}
+
+  // ---------- trace ----------
+  function trace(){
+    if(setKeys(infected).length===0){
+      $("results").innerHTML="<div class='verdict none'><div class='vlabel'>No data</div>"+
+      "<div class='vmain'>No pink beakers selected</div><p>Mark the beakers that turned pink in Step 3, then trace again.</p></div>";
+      return;
+    }
+    var exact=[], scored=[];
+    for(var c=1;c<=N;c++){
+      var sim=simulate(c);
+      var d=symDiff(sim.set,infected);
+      scored.push({c:c,d:d,sim:sim});
+      if(sameSet(sim.set,infected)) exact.push({c:c,sim:sim});
+    }
+
+    if(exact.length===1) renderFound(exact[0]);
+    else if(exact.length>1) renderMulti(exact);
+    else renderNone(scored);
+
+    $("results").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  // ---------- infection graph ----------
+  function growthInfo(counts){
+    var max=-1, rounds=[];
+    for(var i=1;i<counts.length;i++){
+      var rise=counts[i]-counts[i-1];
+      if(rise>max){max=rise;rounds=[i];}
+      else if(rise===max)rounds.push(i);
+    }
+    return {rise:max,rounds:rounds};
+  }
+
+  function infectionGraphBlock(baseCounts,interventionCounts,title){
+    var W=Math.max(620,120+R*105), H=310;
+    var ml=56,mr=28,mt=28,mb=52;
+    var plotW=W-ml-mr,plotH=H-mt-mb;
+    var plotted=baseCounts.concat(interventionCounts||[]);
+    var maxY=Math.max(2,Math.max.apply(null,plotted));
+    var x=function(i){return ml+(baseCounts.length===1?plotW/2:i*plotW/(baseCounts.length-1));};
+    var y=function(v){return mt+plotH-(v/maxY)*plotH;};
+    var ticks=Math.min(5,maxY),svg="";
+    svg+="<svg role='img' aria-label='Number infected after each swap round' viewBox='0 0 "+W+" "+H+"' width='100%' style='min-width:600px;font-family:\"IBM Plex Mono\",monospace'>";
+    for(var t=0;t<=ticks;t++){
+      var val=Math.round(maxY*t/ticks), yy=y(val);
+      svg+="<line x1='"+ml+"' y1='"+yy+"' x2='"+(W-mr)+"' y2='"+yy+"' stroke='#d8d0c0' stroke-width='1'/>";
+      svg+="<text x='"+(ml-10)+"' y='"+(yy+4)+"' text-anchor='end' font-size='10' fill='#6f766f'>"+val+"</text>";
+    }
+    for(var i=0;i<baseCounts.length;i++){
+      var label=i===0?"Start":"R"+i;
+      svg+="<text x='"+x(i)+"' y='"+(H-23)+"' text-anchor='middle' font-size='11' fill='#525c63'>"+label+"</text>";
+    }
+    svg+="<text transform='translate(15 "+(mt+plotH/2)+") rotate(-90)' text-anchor='middle' font-size='10' fill='#525c63' letter-spacing='1'>TOTAL INFECTED</text>";
+    function series(counts,col,dash){
+      var pts=counts.map(function(v,i){return x(i)+","+y(v);}).join(" ");
+      svg+="<polyline points='"+pts+"' fill='none' stroke='"+col+"' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'"+(dash?" stroke-dasharray='7 5'":"")+"/>";
+      counts.forEach(function(v,i){
+        svg+="<circle cx='"+x(i)+"' cy='"+y(v)+"' r='5' fill='"+col+"' stroke='#fff' stroke-width='2'/>";
+        svg+="<text x='"+x(i)+"' y='"+(y(v)-10)+"' text-anchor='middle' font-size='11' font-weight='600' fill='"+col+"'>"+v+"</text>";
+      });
+    }
+    series(baseCounts,"#d6336c",false);
+    if(interventionCounts)series(interventionCounts,"#0e6b65",true);
+    svg+="</svg>";
+
+    var g=growthInfo(baseCounts);
+    var roundWords=g.rounds.map(function(r){return "Round "+r;}).join(" and ");
+    var legend="<div class='graph-legend'><span><i class='graph-line'></i>Original outbreak</span>";
+    if(interventionCounts)legend+="<span><i class='graph-line intervention'></i>With intervention</span>";
+    legend+="</div>";
+    return "<div class='graph-card'><div class='graph-head'><div><h3>"+(title||"Infection growth by round")+"</h3><p class='graph-note'>Cumulative number infected after each swap round.</p></div>"+legend+"</div>"+
+      "<div class='graph-scroll'>"+svg+"</div>"+
+      "<div class='growth-callout'><b>Fastest growth:</b> "+roundWords+" added "+g.rise+" new infection"+(g.rise===1?"":"s")+".</div></div>";
+  }
+
+  // ---------- intervention controls and comparison ----------
+  function populateInterventionRounds(){
+    var sel=$("interventionRound"); if(!sel)return;
+    sel.innerHTML="<option value='0'>Before Round 1</option>";
+    for(var r=1;r<R;r++) sel.innerHTML+="<option value='"+r+"'>After Round "+r+"</option>";
+    sel.value=R>1?"1":"0";
+  }
+
+  function buildTargetChips(){
+    var box=$("targetChips"); if(!box)return;
+    box.innerHTML=""; interventionTargets={};
+    for(var s=1;s<=N;s++){
+      var chip=document.createElement("div");
+      chip.className="target-chip"; chip.textContent=s; chip.dataset.s=s;
+      chip.addEventListener("click",function(e){
+        var n=+e.currentTarget.dataset.s;
+        if(interventionTargets[n]){delete interventionTargets[n];e.currentTarget.classList.remove("selected");}
+        else{interventionTargets[n]=true;e.currentTarget.classList.add("selected");}
+        updateTargetCount();
+      });
+      box.appendChild(chip);
+    }
+    $("autoTargetCount").max=N;
+    $("autoTargetCount").value=Math.min(5,N);
+    updateTargetCount();
+  }
+
+  function updateTargetCount(){
+    var n=setKeys(interventionTargets).length;
+    $("targetCount").textContent=n+" student"+(n===1?"":"s")+" selected";
+  }
+
+  function clearTargets(){
+    interventionTargets={};
+    document.querySelectorAll("#targetChips .target-chip").forEach(function(c){c.classList.remove("selected")});
+    updateTargetCount();
+  }
+
+  function selectConnectedTargets(){
+    clearTargets();
+    var count=Math.max(1,Math.min(N,parseInt($("autoTargetCount").value)||1));
+    var start=parseInt($("interventionRound").value)||0;
+    connectionRanking(start).slice(0,count).forEach(function(n){
+      interventionTargets[n]=true;
+      var c=document.querySelector("#targetChips .target-chip[data-s='"+n+"']"); if(c)c.classList.add("selected");
+    });
+    updateTargetCount();
+  }
+
+  function updateInterventionUI(){
+    if(!$("interventionType"))return;
+    var type=$("interventionType").value;
+    var area=$("targetArea"), label=$("strengthLabel"), explain=$("interventionExplain");
+    var manual=(type==="vaccination"||type==="isolation");
+    area.classList.toggle("hidden",!manual);
+    var info={
+      vaccination:{label:"Vaccine effectiveness (%)",text:"Selected students who are still uninfected gain protection when the intervention begins. Vaccination does not cure anyone already infected."},
+      isolation:{label:"Isolation compliance (%)",text:"Selected students stop participating in later swaps if their isolation is successful. This can stop both acquiring and passing on the infection."},
+      reduced:{label:"Swaps cancelled (%)",text:"A chosen proportion of recorded swaps is removed after the intervention begins, modelling distancing or smaller mixing groups."},
+      tracing:{label:"Tracing success (%)",text:"Current infected students and their most recent contacts are identified and isolated. Higher tracing success means more of these people are removed from later swaps."},
+      masks:{label:"Transmission reduction (%)",text:"Contacts still occur, but masks reduce the chance that an infected-to-clear swap transmits the simulated infection."},
+      closure:{label:"Class removed (%)",text:"The most highly connected students are identified from the contact records and their group is closed, so they take no part in later swaps."}
+    }[type];
+    label.textContent=info.label; explain.textContent=info.text;
+    $("targetTitle").textContent=type==="vaccination"?"Choose students to vaccinate":"Choose students to isolate";
+    if(type==="isolation" && +$("interventionStrength").value===80)$("interventionStrength").value=100;
+    if(type==="closure" && +$("interventionStrength").value>50)$("interventionStrength").value=20;
+  }
+
+  function prepareIntervention(source,baseline,isMulti){
+    currentSource=source; currentBaseline=baseline; multipleSourceMode=!!isMulti;
+    $("interventionCard").style.display="";
+    $("interventionResult").innerHTML=isMulti?
+      "<div class='warnbox'><b>Simulation note:</b> Several patient-zero candidates fit the evidence. This comparison uses Student "+source+" as one valid source.</div>":"";
+  }
+
+  function interventionName(type){
+    return {vaccination:"Vaccination",isolation:"Isolation",reduced:"Reduced swapping",tracing:"Contact tracing",masks:"Masks",closure:"Closing a highly connected group"}[type]||"Intervention";
+  }
+
+  function runIntervention(){
+    if(!currentSource||!currentBaseline){return;}
+    var type=$("interventionType").value;
+    var start=parseInt($("interventionRound").value)||0;
+    var strength=Math.max(0,Math.min(100,parseInt($("interventionStrength").value)||0));
+    $("interventionStrength").value=strength;
+    if((type==="vaccination"||type==="isolation") && setKeys(interventionTargets).length===0){
+      $("interventionResult").innerHTML="<div class='warnbox'><b>Select at least one student</b> to use vaccination or isolation.</div>";
+      return;
+    }
+    var sim=simulate(currentSource,{type:type,startAfter:start,strength:strength,targets:interventionTargets});
+    var baseTotal=currentBaseline.counts[currentBaseline.counts.length-1];
+    var newTotal=sim.counts[sim.counts.length-1];
+    var prevented=Math.max(0,baseTotal-newTotal);
+    var reduction=baseTotal?Math.round(prevented/baseTotal*100):0;
+    var when=start===0?"before Round 1":"after Round "+start;
+    var detail=[];
+    if(sim.blockedTransmissions)detail.push(sim.blockedTransmissions+" attempted transmission"+(sim.blockedTransmissions===1?" was":"s were")+" blocked");
+    if(sim.skippedSwaps)detail.push(sim.skippedSwaps+" later swap"+(sim.skippedSwaps===1?" was":"s were")+" removed");
+    if(sim.protected.length)detail.push("protected students: "+sim.protected.join(", "));
+    if(sim.isolated.length)detail.push("isolated students: "+sim.isolated.join(", "));
+    if(sim.closed.length)detail.push("high-contact group closed: "+sim.closed.join(", "));
+    if(!detail.length)detail.push("the selected settings did not block any transmission in this contact network");
+
+    var html="<div class='verdict "+(prevented>0?"found":"none")+"'>"+
+      "<div class='vlabel'>Intervention comparison</div><div class='vmain'>"+interventionName(type)+" prevented <span class='pznum'>"+prevented+"</span> infection"+(prevented===1?"":"s")+"</div>"+
+      "<p>The intervention began "+when+" at "+strength+"% effectiveness. Compare the original outbreak with the new simulated outcome below.</p></div>"+
+      "<div class='stats'>"+
+        "<div class='stat'><div class='num'>"+baseTotal+"</div><div class='lab'>Original total infected</div></div>"+
+        "<div class='stat good'><div class='num'>"+newTotal+"</div><div class='lab'>With intervention</div></div>"+
+        "<div class='stat good'><div class='num'>"+prevented+"</div><div class='lab'>Infections prevented</div></div>"+
+        "<div class='stat good'><div class='num'>"+reduction+"%</div><div class='lab'>Outbreak reduction</div></div>"+
+      "</div>"+
+      infectionGraphBlock(currentBaseline.counts,sim.counts,"Original outbreak vs intervention")+
+      "<ul class='detail-list'>"+detail.map(function(d){return "<li>"+d+"</li>";}).join("")+"</ul>"+
+      "<p class='model-note'><b>Model limitation:</b> this is a simplified classroom simulation. Results depend on the recorded swaps, assumed intervention effectiveness and the rule that an ordinary infected-to-clear swap transmits unless it is blocked.</p>";
+    if(multipleSourceMode)html="<div class='warnbox'><b>Source assumption:</b> Student "+currentSource+" is being used as one of the valid patient-zero candidates.</div>"+html;
+    $("interventionResult").innerHTML=html;
+    $("interventionResult").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  // ---------- renderers ----------
+  function infCount(){return setKeys(infected).length}
+
+  function renderFound(hit){
+    var html="<div class='verdict found'>"+
+      "<div class='vlabel'>Source identified</div>"+
+      "<div class='vmain'>Patient Zero is Student <span class='pznum'>"+hit.c+"</span></div>"+
+      "<p>Starting from beaker "+hit.c+" alone, the infection spreads to exactly the "+infCount()+
+      " beakers that turned pink — and no others. That's a clean, unique match.</p></div>";
+    html+=infectionGraphBlock(hit.sim.counts,null,"Infection growth by round");
+    html+=treeBlock(hit.c,hit.sim.log);
+    $("results").innerHTML=html;
+    wireTree();
+    prepareIntervention(hit.c,hit.sim,false);
+  }
+
+  function renderMulti(hits){
+    var nums=hits.map(function(h){return h.c});
+    var html="<div class='verdict multi'>"+
+      "<div class='vlabel'>"+hits.length+" possible sources</div>"+
+      "<div class='vmain'>It narrows to "+hits.length+" suspects</div>"+
+      "<p>Each of these beakers, on its own, would have produced the exact same set of "+infCount()+
+      " pink results. With a single indicator test you genuinely can't separate the true source from the very first beaker it touched — they look identical to contact tracing. (That's a real epidemiology problem, not a fault in the data!)</p>"+
+      "<div class='pz-pills'>"+nums.map(function(n){return "<span class='pz-pill'>"+n+"</span>"}).join("")+"</div></div>";
+    html+=infectionGraphBlock(hits[0].sim.counts,null,"Infection growth for one possible source");
+    html+="<p class='tree-title'>One possible chain (starting from "+hits[0].c+")</p>";
+    html+=treeBlock(hits[0].c,hits[0].sim.log);
+    html+="<div class='warnbox'><b>How to break the tie in class:</b> the true source had the strongest (least-diluted) solution, so its colour change is usually the most intense. You can also ask the suspects who they swapped with first — patient zero is the one whose round-1 partner is also on this list.</div>";
+    $("results").innerHTML=html;
+    wireTree();
+    prepareIntervention(hits[0].c,hits[0].sim,true);
+  }
+
+  function renderNone(scored){
+    scored.sort(function(a,b){return a.d-b.d});
+    var best=scored.filter(function(x){return x.d===scored[0].d}).slice(0,5);
+    var html="<div class='verdict none'>"+
+      "<div class='vlabel'>No exact match</div>"+
+      "<div class='vmain'>The results don't trace to a single source</div>"+
+      "<p>No single starting beaker reproduces this exact pink pattern. That usually means a swap was recorded incorrectly, a beaker was spilled or contaminated, or the indicator caught a borderline (very diluted) sample. The closest candidate"+(best.length>1?"s are":" is")+" below.</p></div>";
+
+    best.forEach(function(b){
+      var miss=[], extra=[];
+      for(var k in infected) if(!b.sim.set[k]) miss.push(k);   // pink but model says clean
+      for(var k in b.sim.set) if(!infected[k]) extra.push(k);  // model says pink but it was clear
+      html+="<div class='card' style='margin-top:14px'><div class='card-head' style='margin-bottom:8px'>"+
+        "<span class='step'>"+b.c+"</span><h2 style='font-size:19px'>If Student "+b.c+" were the source</h2></div>"+
+        "<div class='discrep'>";
+      if(miss.length) html+="<div><span class='tag fp'>turned pink unexpectedly</span> Beakers "+miss.join(", ")+" went pink but shouldn't have on this chain.</div>";
+      if(extra.length) html+="<div style='margin-top:6px'><span class='tag fn'>expected pink, stayed clear</span> Beakers "+extra.join(", ")+" should have caught it but didn't.</div>";
+      html+="</div></div>";
+    });
+    $("results").innerHTML=html;
+    currentSource=null; currentBaseline=null;
+    $("interventionCard").style.display="none";
+  }
+
+  // ---------- SVG infection tree (animatable spread map) ----------
+  function treeBlock(source,log){
+    // assign each infected student a "round caught" level + its infector
+    var level={}, parent={};
+    level[source]=0; parent[source]=null;
+    for(var r=0;r<log.length;r++){
+      for(var i=0;i<log[r].length;i++){
+        var ev=log[r][i];
+        if(level[ev.to]===undefined){ level[ev.to]=r+1; parent[ev.to]=ev.from; }
+      }
+    }
+    // group by level
+    var maxL=0,k; for(k in level) maxL=Math.max(maxL,level[k]);
+    var byLevel=[]; for(var l=0;l<=maxL;l++)byLevel[l]=[];
+    for(k in level) byLevel[level[k]].push(+k);
+    byLevel.forEach(function(a){a.sort(function(x,y){return x-y})});
+
+    var rowH=98, padX=46, padY=50, nodeR=23;
+    var widest=Math.max.apply(null,byLevel.map(function(a){return a.length})) || 1;
+    var colW=80;
+    var W=Math.max(580, padX*2+(widest)*colW);
+    var H=padY*2+maxL*rowH+nodeR*2;
+    var pos={};
+    byLevel.forEach(function(arr,l){
+      var totalW=(arr.length)*colW;
+      var startX=(W-totalW)/2+colW/2;
+      arr.forEach(function(n,i){ pos[n]={x:startX+i*colW, y:padY+nodeR+l*rowH}; });
+    });
+
+    var svg="<svg viewBox='0 0 "+W+" "+H+"' width='100%' style='max-width:"+W+"px;font-family:\"IBM Plex Mono\",monospace'>";
+    // round bands + labels
+    for(var l=0;l<=maxL;l++){
+      var yC=padY+nodeR+l*rowH;
+      if(l%2===1) svg+="<rect x='0' y='"+(yC-rowH/2)+"' width='"+W+"' height='"+rowH+"' fill='rgba(32,38,43,.03)'/>";
+      var lab=l===0?"SOURCE":"ROUND "+l;
+      svg+="<text x='12' y='"+(yC+4)+"' font-size='10' fill='#8a8270' letter-spacing='1.5'>"+lab+"</text>";
+    }
+    // edges (revealed at the child's round)
+    for(k in parent){ var p=parent[k]; if(p===null||!pos[k]||!pos[p])continue;
+      svg+="<line class='te' data-reveal='"+level[k]+"' x1='"+pos[p].x+"' y1='"+(pos[p].y+nodeR)+"' x2='"+pos[k].x+"' y2='"+(pos[k].y-nodeR)+"' stroke='#d6336c' stroke-width='2.5' opacity='.55'/>";
+    }
+    // nodes (revealed at their round)
+    for(k in pos){
+      var isSrc=(+k===source);
+      var fill=isSrc?"#20262b":"#d6336c";
+      svg+="<g class='tn' data-reveal='"+level[k]+"'>";
+      if(isSrc) svg+="<circle cx='"+pos[k].x+"' cy='"+pos[k].y+"' r='"+(nodeR+5)+"' fill='none' stroke='#0e6b65' stroke-width='2'/>";
+      svg+="<circle cx='"+pos[k].x+"' cy='"+pos[k].y+"' r='"+nodeR+"' fill='"+fill+"'/>";
+      svg+="<text x='"+pos[k].x+"' y='"+(pos[k].y+5)+"' text-anchor='middle' font-size='15' font-weight='600' fill='#fff'>"+k+"</text>";
+      if(isSrc) svg+="<text x='"+pos[k].x+"' y='"+(pos[k].y-nodeR-11)+"' text-anchor='middle' font-size='9' fill='#0e6b65' font-weight='600' letter-spacing='1'>PATIENT ZERO</text>";
+      svg+="</g>";
+    }
+    svg+="</svg>";
+
+    // whole-class strip (fills with pink as the animation plays)
+    var strip="<p class='tree-title'>The whole class · pink = infected</p><div class='class-strip'>";
+    for(var s=1;s<=N;s++){
+      var rv=(level[s]!==undefined)?level[s]:999;
+      strip+="<div class='cdot"+(s===source?" src":"")+"' data-reveal='"+rv+"'>"+s+"</div>";
+    }
+    strip+="</div>";
+
+    // build captions + running totals for each step
+    var caps=[], running=1;
+    caps[0]="Patient Zero — <b>Student "+source+"</b> begins with the infection. <span class='cnt'>1 of "+N+" infected.</span>";
+    for(var r=0;r<log.length;r++){
+      var tr=log[r]; running+=tr.length;
+      var body;
+      if(tr.length===0){ body="Round "+(r+1)+" — no new infections this round."; }
+      else { body="Round "+(r+1)+" — "+tr.map(function(e){return e.from+"&nbsp;&rarr;&nbsp;"+e.to;}).join(",&nbsp;&nbsp;")+"."; }
+      caps[r+1]=body+" <span class='cnt'>"+running+" of "+N+" infected.</span>";
+    }
+    treeData={caps:caps, maxRound:log.length, source:source};
+
+    var clear=N-infCount();
+
+    // ===== ALL-CONTACTS MAP =====
+    // Every student is a node; every swap (per round) is a line. Pink lines and
+    // pink nodes show where the infection actually travelled; grey lines and grey
+    // nodes show every other contact — the people who were exposed but stayed clean,
+    // and the swaps where both partners were already clean.
+    var acRowH=110, acPadX=46, acPadY=44, acNodeR=18;
+    var acColW=Math.max(54, Math.min(72, Math.floor((720-acPadX*2)/Math.max(1,N))));
+    var acTotalW=acPadX*2+(N-1)*acColW+acNodeR*2;
+    var acW=Math.max(720, acTotalW);
+    var acRows=log.length+1; // start row + one per round
+    var acH=acPadY*2+(acRows-1)*acRowH+acNodeR*2;
+
+    // x position for each student (1..N) — fixed columns left→right
+    var acX={};
+    var startX=(acW-(N-1)*acColW)/2;
+    for(var s=1;s<=N;s++) acX[s]=startX+(s-1)*acColW;
+
+    // infection status per ROW (row 0 = before any swaps; row r = after round r)
+    var statusBy=[]; // statusBy[row][student] = true if infected by end of that row
+    statusBy[0]={}; statusBy[0][source]=true;
+    for(var r=0;r<log.length;r++){
+      statusBy[r+1]={}; for(var k in statusBy[r]) statusBy[r+1][k]=true;
+      for(var i=0;i<log[r].length;i++) statusBy[r+1][log[r][i].to]=true;
+    }
+
+    var ac="<svg viewBox='0 0 "+acW+" "+acH+"' width='100%' style='max-width:"+acW+"px;font-family:\"IBM Plex Mono\",monospace'>";
+    // alternating row bands + labels
+    for(var rr=0;rr<acRows;rr++){
+      var yC=acPadY+acNodeR+rr*acRowH;
+      if(rr%2===1) ac+="<rect x='0' y='"+(yC-acRowH/2)+"' width='"+acW+"' height='"+acRowH+"' fill='rgba(32,38,43,.03)'/>";
+      var lab=rr===0?"START":"AFTER R"+rr;
+      ac+="<text x='12' y='"+(yC+4)+"' font-size='10' fill='#8a8270' letter-spacing='1.5'>"+lab+"</text>";
+    }
+    // edges — one per swap per round
+    for(var r=0;r<log.length;r++){
+      var prs=pairsForRound(r);
+      // build a set of infection events for this round for quick lookup
+      var infSet={}; for(var i=0;i<log[r].length;i++){ var e=log[r][i]; infSet[Math.min(e.from,e.to)+"-"+Math.max(e.from,e.to)]=true; }
+      var y1=acPadY+acNodeR+r*acRowH, y2=acPadY+acNodeR+(r+1)*acRowH;
+      for(var p=0;p<prs.length;p++){
+        var a=prs[p][0], b=prs[p][1];
+        var isInfection=!!infSet[a+"-"+b];
+        var col=isInfection?"#d6336c":"#bcb7a5";
+        var width=isInfection?2.4:1.4;
+        var opa=isInfection?0.9:0.55;
+        // draw line from a's row r position down to b's row r+1 position (and vice versa)
+        ac+="<line class='ace' data-reveal='"+(r+1)+"' x1='"+acX[a]+"' y1='"+(y1+acNodeR)+"' x2='"+acX[b]+"' y2='"+(y2-acNodeR)+"' stroke='"+col+"' stroke-width='"+width+"' opacity='"+opa+"'/>";
+        ac+="<line class='ace' data-reveal='"+(r+1)+"' x1='"+acX[b]+"' y1='"+(y1+acNodeR)+"' x2='"+acX[a]+"' y2='"+(y2-acNodeR)+"' stroke='"+col+"' stroke-width='"+width+"' opacity='"+opa+"'/>";
+      }
+    }
+    // nodes — every student on every row, coloured by their status at that row
+    for(var rr=0;rr<acRows;rr++){
+      var yN=acPadY+acNodeR+rr*acRowH;
+      for(var s=1;s<=N;s++){
+        var inf=!!statusBy[rr][s];
+        var isSrc=(s===source);
+        var fill=isSrc&&inf?"#20262b":(inf?"#d6336c":"#e7e0d1");
+        var txt=inf?"#fff":"#525c63";
+        ac+="<g class='acn' data-reveal='"+rr+"'>";
+        ac+="<circle cx='"+acX[s]+"' cy='"+yN+"' r='"+acNodeR+"' fill='"+fill+"' stroke='"+(inf?"none":"#cdc4b2")+"' stroke-width='1'/>";
+        ac+="<text x='"+acX[s]+"' y='"+(yN+4)+"' text-anchor='middle' font-size='12' font-weight='600' fill='"+txt+"'>"+s+"</text>";
+        ac+="</g>";
+      }
+    }
+    ac+="</svg>";
+
+    var allContacts =
+      "<p class='tree-title'>All contacts · everyone, every swap</p>"+
+      "<div class='ac-legend'>"+
+        "<span><span class='ac-sw' style='background:#20262b;border-color:#20262b'></span>Patient zero</span>"+
+        "<span><span class='ac-sw' style='background:#d6336c;border-color:#d6336c'></span>Infected</span>"+
+        "<span><span class='ac-sw' style='background:#e7e0d1'></span>Stayed clean</span>"+
+        "<span><span class='ac-sw line' style='border-top-color:#d6336c'></span>Infection passed</span>"+
+        "<span><span class='ac-sw line'></span>Clean swap</span>"+
+      "</div>"+
+      "<div class='tree-wrap'>"+ac+"</div>";
+
+    return "<p class='tree-title'>Spread map · "+infCount()+" infected · "+clear+" stayed clear</p>"+
+           "<div class='tree-controls'>"+
+             "<button class='btn-primary tc-play'>&#9654; Watch it spread</button>"+
+             "<button class='btn-ghost tc-prev'>&lsaquo; Back</button>"+
+             "<button class='btn-ghost tc-next'>Step &rsaquo;</button>"+
+             "<span class='tc-round'></span>"+
+           "</div>"+
+           "<div class='tree-caption'></div>"+
+           "<div class='tree-wrap'>"+svg+"</div>"+
+           strip+
+           allContacts;
+  }
+
+  // ---------- playback controller for the spread map ----------
+  function wireTree(){
+    var root=$("results");
+    var play=root.querySelector(".tc-play");
+    if(!play||!treeData) return;
+    var prev=root.querySelector(".tc-prev"),
+        next=root.querySelector(".tc-next"),
+        roundLbl=root.querySelector(".tc-round"),
+        cap=root.querySelector(".tree-caption"),
+        max=treeData.caps.length-1,
+        step=max, timer=null;
+
+    function apply(){
+      root.querySelectorAll(".tn,.te").forEach(function(el){
+        el.classList.toggle("is-hidden", (+el.getAttribute("data-reveal"))>step);
+      });
+      root.querySelectorAll(".cdot").forEach(function(el){
+        el.classList.toggle("lit", (+el.getAttribute("data-reveal"))<=step);
+      });
+      // All-contacts view: show every row of nodes up to (and including) the current
+      // step, and every set of edges up to the current step too. So at "Start" you
+      // see the starting row; after Round 1 you see rows 0–1 and round-1 edges; and
+      // at the end of the animation you see the whole map.
+      root.querySelectorAll(".acn").forEach(function(el){
+        el.classList.toggle("is-hidden", (+el.getAttribute("data-reveal"))>step);
+      });
+      root.querySelectorAll(".ace").forEach(function(el){
+        el.classList.toggle("is-hidden", (+el.getAttribute("data-reveal"))>step);
+      });
+      cap.innerHTML=treeData.caps[step];
+      cap.classList.toggle("src", step===0);
+      roundLbl.textContent = step===0 ? "Start" :
+        (step>=treeData.maxRound ? "Round "+treeData.maxRound+" · complete" : "Round "+step+" of "+treeData.maxRound);
+    }
+    function stop(){ if(timer){clearInterval(timer);timer=null;} play.innerHTML="&#9654; Watch it spread"; }
+    function go(s){ step=Math.max(0,Math.min(max,s)); apply(); }
+
+    prev.onclick=function(){ stop(); go(step-1); };
+    next.onclick=function(){ stop(); go(step+1); };
+    play.onclick=function(){
+      if(timer){ stop(); return; }
+      go(0); play.innerHTML="&#9632; Stop";
+      timer=setInterval(function(){ if(step>=max){ stop(); return; } go(step+1); },1300);
+    };
+    apply(); // start on the full picture
+  }
+
+  // ---------- worked example ----------
+  function loadExample(){
+    $("numStudents").value=12; $("numRounds").value=3;
+    buildSheet();
+    // a tidy 12-student, 3-round outbreak. Source = 7.
+    var rounds=[
+      [[1,2],[3,4],[5,6],[7,8],[9,10],[11,12]],
+      [[2,3],[8,5],[4,9],[1,11],[6,12],[7,10]],
+      [[3,6],[5,4],[8,1],[9,11],[2,7],[10,12]]
+    ];
+    for(var r=0;r<3;r++){
+      for(var i=0;i<rounds[r].length;i++){
+        var a=rounds[r][i][0]-1,b=rounds[r][i][1]-1;
+        partners[a][r]=b+1; partners[b][r]=a+1;
+        $("p-"+a+"-"+r).value=b+1; $("p-"+b+"-"+r).value=a+1;
+      }
+    }
+    // mark the beakers that this outbreak (source 7) actually turns pink
+    var sim=simulate(7);
+    infected={};
+    Object.keys(sim.set).forEach(function(n){
+      infected[n]=true;
+      var chip=document.querySelector(".chip[data-s='"+n+"']");
+      if(chip)chip.classList.add("pink");
+    });
+    validate();
+    $("swapCard").scrollIntoView({behavior:"smooth"});
+  }
+
+  // ---------- wiring ----------
+  $("buildBtn").addEventListener("click",buildSheet);
+  $("exampleBtn").addEventListener("click",loadExample);
+  $("traceBtn").addEventListener("click",trace);
+  $("clearPinkBtn").addEventListener("click",function(){
+    infected={};
+    document.querySelectorAll("#pinkChips .chip").forEach(function(c){c.classList.remove("pink")});
+  });
+  $("interventionType").addEventListener("change",updateInterventionUI);
+  $("interventionRound").addEventListener("change",function(){
+    if($("interventionType").value==="vaccination"||$("interventionType").value==="isolation") clearTargets();
+  });
+  $("selectConnectedBtn").addEventListener("click",selectConnectedTargets);
+  $("clearTargetsBtn").addEventListener("click",clearTargets);
+  $("runInterventionBtn").addEventListener("click",runIntervention);
+
+  buildSheet();
+})();
+</script>
+</body>
+</html>
